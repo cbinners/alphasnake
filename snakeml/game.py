@@ -62,8 +62,12 @@ class Game(object):
         return len(self.board["snakes"] <= 1)
 
     def make_move(self, move):
+        if random.randint(0, 100) == 50:
+            print(len(self.history))
+            if len(self.history) > 2000:
+                print(self.board['snakes'][0].body)
         self.history.append(copy.deepcopy(self.board))
-
+        self.turn += 1
         # Update our board
         for i in range(len(self.board['snakes'])):
             snake = self.board['snakes'][i]
@@ -109,12 +113,16 @@ class Game(object):
             if self.place_free(right, used):
                 allowable.append(MOVE_RIGHT)
 
+            if len(allowable) == 0:
+                allowable.append(MOVE_UP)
+
             moves_for_snake.append(allowable)
 
         # Use itertools to generate all possible moves
         return moves_for_snake[0], list(itertools.product(*moves_for_snake[1:]))
 
     def undo_move(self):
+        self.turn -= 1
         self.board = self.history.pop()
 
     def place_free(self, point, used):
@@ -159,7 +167,6 @@ class Game(object):
         for snake in self.board['snakes']:
             if snake.dead:
                 continue
-            print(snake.body)
             for point in snake.body:
                 snake_positions.add(point)
 
@@ -178,6 +185,13 @@ class Game(object):
                 continue
 
             head = snake.body[0]
+
+            if head[0] < 0 or head[0] >= self.width:
+                snake.dead = True
+
+            if head[1] < 0 or head[1] >= self.height:
+                snake.dead = True
+
             # if this head is new, just set it
             if head in longest:
                 if len(snake.body) == longest[head]:
@@ -228,7 +242,7 @@ class Game(object):
         return 1
 
     def print(self):
-        print(self.board['snakes'], self.board['food'])
+        print(self.turn, self.board['snakes'], self.board['food'])
 
     def state(self):
         # TODO: Return state for tensorflow
