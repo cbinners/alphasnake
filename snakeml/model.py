@@ -39,9 +39,15 @@ class Net():
     def update(self, state, score):
         tensorinput = [0, 0]
         tensorinput[score] = 1
+
+        # Fill in the ys of shape (X, 2) where X is the number of inputs
         y = np.full((int(state.shape[0]), 2), tensorinput)
+
+        # Convert np -> tf
         y = tf.convert_to_tensor(y, dtype=tf.float32)
-        self.model.fit(state, y, batch_size=1, callbacks=[self.cp_callback])
+
+        # Fit
+        self.model.fit(state, y, batch_size=32, callbacks=[self.cp_callback])
 
     def predict(self, state):
         now = time.time()
