@@ -46,14 +46,10 @@ class Snake(object):
 
 def generate_mutations(arr, game_size, max_size=21):
     output = []
-    amount = max_size - game_size
-    for i in range(amount):
-        for j in range(amount):
-            cur = np.roll(np.roll(arr, i, axis=0), j, axis=1)
-            for r in range(4):
-                rotated = np.rot90(cur, r)
 
-                output.append(rotated)
+    for r in range(4):
+        rotated = np.rot90(arr, r)
+        output.append(rotated)
 
     return output
 
@@ -263,8 +259,19 @@ class Game(object):
         return alive <= 1 or self.board['snakes'][0].dead
 
     def score(self):
+        alive = 0
+        for snake in self.board['snakes']:
+            if snake.dead:
+                continue
+            alive += 1
+
         if self.board['snakes'][0].dead:
-            return 0
+            if alive > 0:
+                return -1
+            else:
+                return 0
+
+        # We won
         return 1
 
     def print(self):

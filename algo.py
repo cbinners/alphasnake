@@ -16,7 +16,7 @@ def predict(net, game, playerMove):
 
     (_, enemy_moves) = game.valid_moves()
 
-    worst_score = 100.0
+    worst_score = 1.0
     worst_move = None
     for i in range(len(enemy_moves)):
         move = enemy_moves[i]
@@ -58,11 +58,7 @@ def simulate_move(net, game):
             done = True
             # We've recorded
             records -= 1
-            game.print()
             break
-
-        if records > 500:
-            game.print()
 
         (player_moves, enemy_moves) = game.valid_moves()
 
@@ -161,6 +157,6 @@ if __name__ == "__main__":
     with open("input.json") as f:
         payload = json.load(f)
         instance = G.Game(payload)
-        net = model.Net("models/uber_trainer.model")
+        net = model.Net("models/tanh.model")
 
-        print(get_best_move(net, instance))
+        print(get_best_move(net, instance, 2))

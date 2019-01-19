@@ -19,29 +19,27 @@ class Net():
             tf.keras.layers.InputLayer(input_shape=(19, 19, 3)),
             tf.keras.layers.Conv2D(2, kernel_size=(3, 3), activation='relu'),
             tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation='relu'),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=(1, 1)),
             tf.keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=(1, 1)),
             tf.keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
-            tf.keras.layers.Dropout(0.25),
+            tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=(1, 1)),
             tf.keras.layers.Flatten(),
+            tf.keras.layers.Dropout(0.2),
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dense(256, activation='relu'),
-            tf.keras.layers.Dropout(0.25),
-            tf.keras.layers.Dense(2, activation='softmax')
+            tf.keras.layers.Dense(1, 'tanh')
         ])
 
-        self.model.compile(loss=tf.keras.losses.categorical_crossentropy,
+        self.model.compile(loss=tf.keras.losses.mean_squared_error,
                            optimizer=tf.train.AdamOptimizer(
                                learning_rate=0.000001),
-                           metrics=['accuracy'])
+                           metrics=['mae', 'mse'])
 
         self.reload()
 
     def update(self, state, score):
-        tensorinput = [0, 0]
-        tensorinput[score] = 1
-
-        # Fill in the ys of shape (X, 2) where X is the number of inputs
-        y = np.full((int(state.shape[0]), 2), tensorinput)
+        y = np.full((int(state.shape[0]), 1), score)
 
         # Convert np -> tf
         y = tf.convert_to_tensor(y, dtype=tf.float32)
@@ -55,7 +53,7 @@ class Net():
         after = time.time()
         print(state.shape[0], "inputs in", int(
             round(1000*(after - now))), "ms")
-        return result.mean(axis=0)[1]
+        return result.mean()
 
     def reload(self):
         if os.path.isfile(self.checkpoint_path):
