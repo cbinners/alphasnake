@@ -1,21 +1,17 @@
 import json
 import numpy as np
-from snakeml import model, game
+from snakeml import model, game as G
 import random
 import sys
 
-sys.setrecursionlimit(2000)
 
-net = model.Net()
-
-
-def predict(game, playerMove):
+def predict(net, game, playerMove):
     print("Simulating..")
     for snake in game.board['snakes']:
         print(snake.body)
     if game.over():
         score = game.score()
-        record(game, score)
+        record(net, game, score)
         return score
 
     (_, enemy_moves) = game.valid_moves()
@@ -32,7 +28,7 @@ def predict(game, playerMove):
             move_to_execute.append(move[i])
 
         game.make_move(move_to_execute)
-        score = heuristic(game)
+        score = heuristic(net, game)
         game.undo_move()
 
         # Check if our score is worse
@@ -42,26 +38,31 @@ def predict(game, playerMove):
 
     # Actually apply the move and continue
     game.make_move(worst_move)
-    value = simulate_move(game)
+    value = simulate_move(net, game)
     game.undo_move()
-    record(game, value)
+    record(net, game, value)
+
+    print("Score, saving model", value)
 
     return value
 
 
-def simulate_move(game):
+def simulate_move(net, game):
     result = None
     done = False
     records = 1
     while not done:
         if game.over():
             result = game.score()
-            record(game, result)
+            record(net, game, result)
             done = True
             # We've recorded
             records -= 1
             game.print()
             break
+
+        if records > 500:
+            game.print()
 
         (player_moves, enemy_moves) = game.valid_moves()
 
@@ -75,7 +76,7 @@ def simulate_move(game):
                     move_to_execute.append(enemy_move[i])
 
                 game.make_move(move_to_execute)
-                score = heuristic(game)
+                score = heuristic(net, game)
                 game.undo_move()
 
                 # Check if our score is worse
@@ -95,7 +96,7 @@ def simulate_move(game):
                 move_to_execute.append(move[i])
 
             game.make_move(move_to_execute)
-            score = heuristic(game)
+            score = heuristic(net, game)
             game.undo_move()
 
             # Check if our score is worse
@@ -109,31 +110,46 @@ def simulate_move(game):
 
     # now we're done
     for i in range(records):
-        record(game, result)
+        record(net, game, result)
         game.undo_move()
 
     return result
 
 
-def record(game, score):
-    # TODO: Update ML learning algorithm
+def record(net, game, score):
+    net.update(game.state(), score)
     pass
 
 
-def heuristic(game):
-    return random.random()
+def heuristic(net, game):
+    return net.predict(game.state())
 
 
-def monte_carlo_value(game, playerMove, N=100):
-    scores = [predict(game, playerMove) for i in range(0, N)]
+def monte_carlo_value(net, game, playerMove, N=100):
+    scores = [predict(net, game, playerMove) for i in range(0, N)]
     return np.mean(scores)
 
 
-def get_best_move(game):
-    best_move = -1
+def get_best_move(net, game, samples=100):
+    best_move = G.MOVE_UP  # default to up
     best_score = -1
+    head = game.board['snakes'][0].body[0]
+    # get locations around the head
+    up = (head[0], head[1] - 1)
+    down = (head[0], head[1] + 1)
+    left = (head[0]-1, head[1])
+    right = (head[0]+1, head[1])
     for i in range(4):
-        score = monte_carlo_value(game, i)
+        # Check if this kills us, if it does, don't simulate it...
+        if i == G.MOVE_UP and not game.valid_first_move(up):
+            continue
+        if i == G.MOVE_LEFT and not game.valid_first_move(left):
+            continue
+        if i == G.MOVE_RIGHT and not game.valid_first_move(right):
+            continue
+        if i == G.MOVE_DOWN and not game.valid_first_move(down):
+            continue
+        score = monte_carlo_value(net, game, i, N=samples)
         if score > best_score:
             best_score = score
             best_move = i
@@ -144,9 +160,7 @@ def get_best_move(game):
 if __name__ == "__main__":
     with open("input.json") as f:
         payload = json.load(f)
-        instance = game.Game(payload)
-        print(get_best_move(instance))
+        instance = G.Game(payload)
+        net = model.Net("models/uber_trainer.model")
 
-        net.update(0, 0)
-
-        print(net.predict())
+        print(get_best_move(net, instance))
