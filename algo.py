@@ -10,11 +10,12 @@ loss_scores = []
 draw_scores = []
 
 
-def predict(net, game, playerMove):
-    print("Simulating..")
+def predict(net, game, playerMove, is_training=True):
     if game.over():
         scores = game.score()
-        record(net, game, scores)
+        if is_training:
+            record(net, game, scores)
+            apply_updates()
         return scores[0][1]
 
     moves = game.valid_moves()
@@ -59,28 +60,27 @@ def predict(net, game, playerMove):
     worst_move += moves_for_enemies
     # Actually apply the move and continue
     game.make_move(tuple(worst_move))
-    scores = simulate_move(net, game)
+    scores = simulate_move(net, game, is_training)
     game.undo_move()
 
-    # Record the score for player 0
-    record(net, game, scores)
+    # If we're training, then update the neural net
+    if is_training:
+        record(net, game, scores)
+        apply_updates()
 
-    # APPLY THE UPDATES
-    apply_updates()
     return scores[0][1]
 
 
-def simulate_move(net, game):
+def simulate_move(net, game, is_training):
     done = False
     records = 1
     snake_scores = None
-    game.print()
     while not done:
         if game.over():
             snake_scores = game.score()
-            record(net, game, snake_scores)
+            if is_training:
+                record(net, game, snake_scores)
             done = True
-            game.print()
             records -= 1
             break
 
@@ -91,8 +91,10 @@ def simulate_move(net, game):
         for player in range(len(game.board['snakes'])):
             snake = game.board['snakes'][player]
             if snake.dead:
+                # Default to a 0 move
                 move_to_apply.append(0)
                 continue
+
             # we want the best for enemy_index, initialize this out of bounds
             score_for_move = {0: 2, 1: 2, 2: 2, 3: 2}
             for i in range(len(moves)):
@@ -102,13 +104,14 @@ def simulate_move(net, game):
                 game.undo_move()
 
                 move_index = move[player]
-                # Check if our score is worse
+                # minimize the scores
                 if score < score_for_move[move_index]:
                     score_for_move[move_index] = score
 
             # we want to take the MAX of the scores
             best = -1
             best_direction = 0
+            # Take the highest of the low
             for i in range(4):
                 if score_for_move[i] > best and score_for_move[i] <= 1:
                     best = score_for_move[i]
@@ -120,14 +123,17 @@ def simulate_move(net, game):
         game.make_move(move_to_apply)
         records += 1
 
-    # now we're done
+    # Undo stack, add the inputs for each snake
     for i in range(records):
-        # for each player, record the result
-        for i in range(len(game.board['snakes'])):
-            snake = game.board['snakes'][i]
-            if snake.dead:
-                continue
-            record(net, game, snake_scores)
+        # If we're training, update the model
+        if is_training:
+            for i in range(len(game.board['snakes'])):
+                snake = game.board['snakes'][i]
+                if snake.dead:
+                    continue
+                # Update the net for each snake in this position
+                record(net, game, snake_scores)
+
         game.undo_move()
 
     return snake_scores
@@ -146,20 +152,21 @@ def record(net, game, snake_scores):
 
 
 def apply_updates():
-    # Get some
-    print(len(win_scores), len(loss_scores), len(draw_scores))
-
     wins = len(win_scores)
     losses = len(loss_scores)
 
+    # Make sure the win and loss set are equal size
     truncate_size = min(wins, losses)
-
     truncated_wins = win_scores[:truncate_size]
     truncated_losses = loss_scores[:truncate_size]
 
+    # Construct the final training set, add all draws in (net 0)
     training = truncated_wins+truncated_losses+draw_scores
+
+    # Shuffle the training data, this shuffles in place
     random.shuffle(training)
 
+    # Gather our training examples and construct the label tensor
     ys = []
     x = []
 
@@ -167,13 +174,15 @@ def apply_updates():
         y = np.full((len(example[0]), 1), example[1])
         ys.append(y)
         x.append(example[0])
-    print(len(x), len(ys))
 
+    # Stack the data for the neural net
     X = np.vstack(x)
     Y = np.vstack(ys)
 
+    # Fit the model
     net.update(X, Y)
 
+    # Clear the records so we don't keep lingering data.
     win_scores.clear()
     loss_scores.clear()
     draw_scores.clear()
@@ -187,7 +196,7 @@ def heuristic(net, game, snake_id):
 
 
 def monte_carlo_value(net, game, playerMove, N=100):
-    scores = [predict(net, game, playerMove) for i in range(0, N)]
+    scores = [predict(net, game, playerMove) for i in range(N)]
     return np.mean(scores)
 
 
@@ -219,8 +228,7 @@ def get_best_move(net, game, samples=100):
 
 
 if __name__ == "__main__":
-    with open("input.json") as f:
-        payload = json.load(f)
+    while True:
         instance = G.random_game(2, 7)
-        net = model.Net("models/moves_for_all.model")
-        print(get_best_move(net, instance, 2))
+        net = model.Net("models/derpa.model")
+        print(get_best_move(net, instance, 5))
