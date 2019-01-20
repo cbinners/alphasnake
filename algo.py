@@ -196,8 +196,11 @@ def heuristic(net, game, snake_id):
 
 
 def monte_carlo_value(net, game, playerMove, N=100):
-    scores = [predict(net, game, playerMove) for i in range(N)]
-    return np.mean(scores)
+    print("Simulating", N, "moves in direction", playerMove)
+    scores = [predict(net, game, playerMove, True) for i in range(N)]
+    winrate = np.mean(scores)
+    print("Average Score for", playerMove, ":", winrate)
+    return winrate
 
 
 def get_best_move(net, game, samples=100):
@@ -230,5 +233,6 @@ def get_best_move(net, game, samples=100):
 if __name__ == "__main__":
     while True:
         instance = G.random_game(2, 7)
-        net = model.Net("models/derpa.model")
+        print("Simulating game...")
+        net = model.Net("models/testing.model")
         print(get_best_move(net, instance, 5))

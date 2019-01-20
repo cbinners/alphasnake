@@ -36,7 +36,7 @@ class Net():
                                learning_rate=0.00001),
                            metrics=['mae'])
 
-        self.reload()
+        # self.reload()
 
     def update(self, x, y):
         tf_X = tf.convert_to_tensor(x, dtype=tf.float32)
