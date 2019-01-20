@@ -5,6 +5,7 @@ import random
 import numpy as np
 import tensorflow as tf
 import pprint
+import os
 
 pp = pprint.PrettyPrinter()
 
@@ -340,6 +341,30 @@ class Game(object):
         outputs = generate_mutations(output, self.width, 19)
 
         return outputs
+
+    def render(self):
+        positions = {}
+        for s in range(len(self.board['snakes'])):
+            snake = self.board['snakes'][s]
+            for i in range(len(snake.body)):
+                point = snake.body[i]
+                if i == 0:
+                    positions[point] = str(s)
+                else:
+                    positions[point] = 's'
+
+        for food in self.board['food']:
+            positions[food] = "*"
+
+        os.system('clear')
+        for y in range(self.height):
+            line = ""
+            for x in range(self.width):
+                if (x, y) in positions:
+                    line += positions[(x, y)]
+                else:
+                    line += ' '
+            print(line)
 
 
 def generate_items(players, board_size):

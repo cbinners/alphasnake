@@ -35,7 +35,7 @@ class Net():
                            optimizer=tf.train.AdamOptimizer(learning_rate=0.0000001),
                            metrics=['mae'])
 
-        self.reload()
+        # self.reload()
 
     def update(self, x, y):
         tf_X = tf.convert_to_tensor(x, dtype=tf.float32)
