@@ -285,12 +285,17 @@ class Game(object):
             snake = self.board['snakes'][i]
             if winner == i:
                 scores.append((i, 1))
-            if winner == -1:
-                # tie, check if i'm longest
-                if greatest_death_turn == snake.turn:
-                    scores.append((i, 0))
+            else:
+                if winner == -1:
+                    # tie, check if i'm longest
+                    if greatest_death_turn == snake.turn:
+                        scores.append((i, 0))
+                    else:
+                        scores.append((i, -1))
                 else:
                     scores.append((i, -1))
+
+        print("Scores:", scores)
 
         return scores
 
@@ -337,8 +342,7 @@ class Game(object):
         return tf.convert_to_tensor(outputs, dtype=tf.float32)
 
 
-def generate_items(board_size):
-    players = 2 + random.randrange(6)
+def generate_items(players, board_size):
     foodcount = 4 + random.randrange(4)
     free_places = set()
     for i in range(board_size):
@@ -370,9 +374,9 @@ def generate_items(board_size):
     return (snakes, food)
 
 
-def random_game():
-    size = random.randint(7, 19)
-    (snakes, food) = generate_items(size)
+def random_game(players=2, size=7):
+
+    (snakes, food) = generate_items(players, size)
     payload = {
         "turn": 0,
         "board": {

@@ -4,11 +4,13 @@ from snakeml import model, game as G
 import random
 import sys
 
+win_scores = []
+loss_scores = []
+draw_scores = []
+
 
 def predict(net, game, playerMove):
     print("Simulating..")
-    for snake in game.board['snakes']:
-        print(snake.body)
     if game.over():
         scores = game.score()
         record(net, game, scores)
@@ -61,6 +63,9 @@ def predict(net, game, playerMove):
 
     # Record the score for player 0
     record(net, game, scores)
+
+    # APPLY THE UPDATES
+    apply_updates()
     return scores[0][1]
 
 
@@ -129,12 +134,39 @@ def simulate_move(net, game):
 
 def record(net, game, snake_scores):
     # build up the records
-    records = []
     for (i, score) in snake_scores:
-        snake = game.board['snakes'][i]
-        # Only update if the snake is alive
-        if not snake.dead:
-            net.update(game.state(i), score)
+        state = game.state(i)
+        if score == 1:
+            win_scores.append((state, score))
+        if score == -1:
+            loss_scores.append((state, score))
+        if score == 0:
+            draw_scores.append((state, score))
+
+
+def apply_updates():
+    # Get some
+    print(len(win_scores), len(loss_scores), len(draw_scores))
+
+    wins = len(win_scores)
+    losses = len(loss_scores)
+
+    truncate_size = min(wins, losses)
+
+    truncated_wins = win_scores[:truncate_size]
+    truncated_losses = loss_scores[:truncate_size]
+
+    training = truncated_wins+truncated_losses+draw_scores
+    random.shuffle(training)
+
+    print("Training on", len(training), "samples")
+
+    for example in training:
+        net.update(example[0], example[1])
+
+    win_scores.clear()
+    loss_scores.clear()
+    draw_scores.clear()
 
 
 def heuristic(net, game, snake_id):
@@ -179,6 +211,6 @@ def get_best_move(net, game, samples=100):
 if __name__ == "__main__":
     with open("input.json") as f:
         payload = json.load(f)
-        instance = G.random_game()
+        instance = G.random_game(3, 11)
         net = model.Net("models/moves_for_all.model")
         print(get_best_move(net, instance, 2))
