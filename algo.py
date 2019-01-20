@@ -76,6 +76,7 @@ def simulate_move(net, game, is_training):
     records = 1
     snake_scores = None
     while not done:
+        game.render()
         if game.over():
             snake_scores = game.score()
             if is_training:
