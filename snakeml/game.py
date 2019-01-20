@@ -134,7 +134,7 @@ class Game(object):
             moves_for_snake.append(allowable)
 
         # Use itertools to generate all possible moves
-        return moves_for_snake[0], list(itertools.product(*moves_for_snake[1:]))
+        return list(itertools.product(*moves_for_snake))
 
     def undo_move(self):
         self.turn -= 1

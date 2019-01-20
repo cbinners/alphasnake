@@ -33,7 +33,7 @@ class Net():
 
         self.model.compile(loss=tf.keras.losses.mean_squared_error,
                            optimizer=tf.train.AdamOptimizer(
-                               learning_rate=0.00000001),
+                               learning_rate=0.0001),
                            metrics=['mae'])
 
         self.reload()
