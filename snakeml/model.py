@@ -7,7 +7,7 @@ tf.enable_eager_execution()
 
 
 class Net():
-    def __init__(self, path):
+    def __init__(self, path=None):
         self.checkpoint_path = path
         self.checkpoint_dir = os.path.dirname(self.checkpoint_path)
 
@@ -33,8 +33,8 @@ class Net():
 
         self.model.compile(loss=tf.keras.losses.mean_squared_error,
                            optimizer=tf.train.AdamOptimizer(
-                               learning_rate=0.000001),
-                           metrics=['mae', 'mse'])
+                               learning_rate=0.00000001),
+                           metrics=['mae'])
 
         self.reload()
 
@@ -45,7 +45,8 @@ class Net():
         y = tf.convert_to_tensor(y, dtype=tf.float32)
 
         # Fit
-        self.model.fit(state, y, batch_size=32, callbacks=[self.cp_callback])
+        self.model.fit(state, y, batch_size=32, callbacks=[
+                       self.cp_callback], epochs=1)
 
     def predict(self, state):
         now = time.time()
@@ -56,5 +57,5 @@ class Net():
         return result.mean()
 
     def reload(self):
-        if os.path.isfile(self.checkpoint_path):
+        if self.checkpoint_path is not None:
             self.model.load_weights(self.checkpoint_path)

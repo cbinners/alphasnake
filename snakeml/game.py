@@ -44,11 +44,15 @@ class Snake(object):
         print("ERROR NEVER GET HERE")
 
 
-def generate_mutations(arr, game_size, max_size=21):
+def generate_mutations(arr, game_size, max_size=19):
     output = []
+    amount = max_size - game_size
+
+    cur = np.roll(np.roll(arr, int(amount / 2), axis=0),
+                  int(amount / 2), axis=1)
 
     for r in range(4):
-        rotated = np.rot90(arr, r)
+        rotated = np.rot90(cur, r)
         output.append(rotated)
 
     return output
@@ -210,9 +214,11 @@ class Game(object):
 
             if head[0] < 0 or head[0] >= self.width:
                 snake.dead = True
+                snake.turn = self.turn
 
             if head[1] < 0 or head[1] >= self.height:
                 snake.dead = True
+                snake.turn = self.turn
 
             # if this head is new, just set it
             if head in longest:
@@ -237,8 +243,10 @@ class Game(object):
             head = snake.body[0]
             if head in bodies:
                 snake.dead = True
+                snake.turn = self.turn
             if head in longest:
                 if longestOwner[head] != snake.id:
+                    snake.turn = self.turn
                     snake.dead = True
 
         # dead snakes are dead
@@ -247,6 +255,7 @@ class Game(object):
         # TODO: Kill starved snakes
         for snake in self.board['snakes']:
             if not snake.dead and snake.health <= 0:
+                snake.turn = self.turn
                 snake.dead = True
 
     def over(self):
@@ -256,23 +265,35 @@ class Game(object):
                 continue
             alive += 1
 
-        return alive <= 1 or self.board['snakes'][0].dead
+        print([snake.dead for snake in self.board['snakes']])
+        return alive <= 1
 
     def score(self):
         alive = 0
-        for snake in self.board['snakes']:
+        winner = -1
+        scores = []
+        greatest_death_turn = 0
+
+        for i in range(len(self.board['snakes'])):
+            snake = self.board['snakes'][i]
             if snake.dead:
+                greatest_death_turn = max(greatest_death_turn, snake.turn)
                 continue
             alive += 1
+            winner = i
 
-        if self.board['snakes'][0].dead:
-            if alive > 0:
-                return -1
-            else:
-                return 0
+        for i in range(len(self.board['snakes'])):
+            snake = self.board['snakes'][i]
+            if winner == i:
+                scores.append((i, 1))
+            if winner == -1:
+                # tie, check if i'm longest
+                if greatest_death_turn == snake.turn:
+                    scores.append((i, 0))
+                else:
+                    scores.append((i, -1))
 
-        # We won
-        return 1
+        return scores
 
     def print(self):
         for snake in self.board['snakes']:
@@ -283,7 +304,7 @@ class Game(object):
         for food in self.board['food']:
             print(food)
 
-    def state(self):
+    def state(self, player=0):
         output = np.zeros((19, 19, 3))
         for sId in range(len(self.board['snakes'])):
             snake = self.board['snakes'][sId]
@@ -292,17 +313,17 @@ class Game(object):
             for i in range(len(snake.body)):
                 point = snake.body[i]
                 if i == 0:
-                    if sId == 0:
+                    if sId == player:
                         # add the player head
-                        output[point[0]][point[1]][2] = snake.health
+                        output[point[0]][point[1]][2] = snake.health / 100.0
                     else:
                         # add the enemy head
-                        output[point[0]][point[1]][1] = snake.health
+                        output[point[0]][point[1]][1] = snake.health / 100.0
                 else:
-                    output[point[0]][point[1]][0] = 255.0
+                    output[point[0]][point[1]][0] = 1.0
 
         for food in self.board['food']:
-            output[food[0]][food[1]] = (1, 1, 1)
+            output[food[0]][food[1]] = (.5, .5, .5)
 
         # set 1 outside
         i = self.width

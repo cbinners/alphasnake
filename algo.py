@@ -10,60 +10,82 @@ def predict(net, game, playerMove):
     for snake in game.board['snakes']:
         print(snake.body)
     if game.over():
-        score = game.score()
-        record(net, game, score)
-        return score
+        scores = game.score()
+        record(net, game, scores)
+        return scores[0][1]
 
     (_, enemy_moves) = game.valid_moves()
 
     worst_score = 1.0
-    worst_move = None
-    for i in range(len(enemy_moves)):
-        move = enemy_moves[i]
+    worst_move = [playerMove]
 
-        move_to_execute = [playerMove]
+    moves_for_enemies = []
+    # go through each enemy and find the best move for each individual, then construct the final move,
+    # which consists of everybody playing best for them.
+    for enemy in range(len(game.board['snakes'])-1):
+        # we want the best for enemy_index
+        score_for_move = {0: 1, 1: 1, 2: 1, 3: 1}
+        for i in range(len(enemy_moves)):
+            move = enemy_moves[i]
+            move_to_execute = [playerMove]
 
-        # Add the remaining enemy_moves for the bots
-        for i in range(len(game.board['snakes'])-1):
-            move_to_execute.append(move[i])
+            # Add the remaining enemy_moves for the bots
+            for i in range(len(game.board['snakes'])-1):
+                move_to_execute.append(move[i])
 
-        game.make_move(move_to_execute)
-        score = heuristic(net, game)
-        game.undo_move()
+            game.make_move(move_to_execute)
+            score = heuristic(net, game, enemy + 1)
+            game.undo_move()
 
-        # Check if our score is worse
-        if score < worst_score:
-            worst_score = score
-            worst_move = tuple(move_to_execute)
+            move_index = move[enemy]
+            # Check if our score is worse
+            if score < score_for_move[move_index]:
+                score_for_move[move_index] = score
+
+        # we want to take the MAX of the scores
+        best = -1
+        best_direction = 0
+        for i in range(4):
+            if score_for_move[i] > best:
+                best = score_for_move[i]
+                best_direction = i
+        # Add this best move for the enemy
+        moves_for_enemies.append(best_direction)
+
+    worst_move += moves_for_enemies
+
+    print(worst_move)
 
     # Actually apply the move and continue
-    game.make_move(worst_move)
-    value = simulate_move(net, game)
+    game.make_move(tuple(worst_move))
+    predicted = heuristic(net, game, 0)
+    scores = simulate_move(net, game)
     game.undo_move()
-    record(net, game, value)
 
-    print("Score, saving model", value)
-
-    return value
+    # Record the score for player 0
+    record(net, game, scores)
+    return scores[0][1]
 
 
 def simulate_move(net, game):
     result = None
     done = False
     records = 1
+    winner = -1
+    snake_scores = None
     while not done:
         if game.over():
-            result = game.score()
-            record(net, game, result)
+            snake_scores = game.score()
+            record(net, game, snake_scores)
             done = True
-            # We've recorded
+            print("DONE-=--------------")
             records -= 1
             break
 
         (player_moves, enemy_moves) = game.valid_moves()
 
-        best_score = -100.0
         best_move = None
+        score_for_move = {0: 1, 1: 1, 2: 1, 3: 1}
         for move in player_moves:
             for enemy_move in enemy_moves:
                 move_to_execute = [move]
@@ -72,53 +94,85 @@ def simulate_move(net, game):
                     move_to_execute.append(enemy_move[i])
 
                 game.make_move(move_to_execute)
-                score = heuristic(net, game)
+                score = heuristic(net, game, 0)
                 game.undo_move()
 
                 # Check if our score is worse
-                if score > best_score:
-                    best_score = score
-                    best_move = move
+                if score < score_for_move[move]:
+                    score_for_move[move] = score
+        best = -1
+        best_move = 0
+        for i in range(4):
+            if score_for_move[i] > best:
+                best = score_for_move[i]
+                best_move = i
 
-        worst_score = 100.0
-        worst_move = None
-        for i in range(len(enemy_moves)):
-            move = enemy_moves[i]
+        moves_for_enemies = []
+        worst_move = [best_move]
+        # go through each enemy and find the best move for each individual, then construct the final move,
+        # which consists of everybody playing best for them.
+        for enemy in range(len(game.board['snakes'])-1):
+            snake = game.board['snakes'][enemy+1]
+            if snake.dead:
+                moves_for_enemies.append(0)
+                continue
+            # we want the best for enemy_index
+            score_for_move = {0: 1, 1: 1, 2: 1, 3: 1}
+            for i in range(len(enemy_moves)):
+                move = enemy_moves[i]
+                move_to_execute = [best_move]
 
-            move_to_execute = [best_move]
+                # Add the remaining enemy_moves for the bots
+                for i in range(len(game.board['snakes'])-1):
+                    move_to_execute.append(move[i])
 
-            # Add the remaining enemy_moves for the bots
-            for i in range(len(game.board['snakes'])-1):
-                move_to_execute.append(move[i])
+                game.make_move(move_to_execute)
+                score = heuristic(net, game, enemy + 1)
+                game.undo_move()
 
-            game.make_move(move_to_execute)
-            score = heuristic(net, game)
-            game.undo_move()
+                move_index = move[enemy]
+                # Check if our score is worse
+                if score < score_for_move[move_index]:
+                    score_for_move[move_index] = score
 
-            # Check if our score is worse
-            if score < worst_score:
-                worst_score = score
-                worst_move = tuple(move_to_execute)
+            # we want to take the MAX of the scores
+            best = -1
+            best_direction = 0
+            for i in range(4):
+                if score_for_move[i] > best:
+                    best = score_for_move[i]
+                    best_direction = i
+            # Add this best move for the enemy
+            moves_for_enemies.append(best_direction)
 
+        worst_move += moves_for_enemies
         # Actually apply the move and continue
         game.make_move(worst_move)
         records += 1
 
     # now we're done
     for i in range(records):
-        record(net, game, result)
+        # for each player, record the result
+        for i in range(len(game.board['snakes'])):
+            snake = game.board['snakes'][i]
+            if snake.dead:
+                continue
+            record(net, game, snake_scores)
         game.undo_move()
 
-    return result
+    return snake_scores
 
 
-def record(net, game, score):
-    net.update(game.state(), score)
-    pass
+def record(net, game, snake_scores):
+    for (i, score) in snake_scores:
+        snake = game.board['snakes'][i]
+        # Only update if the snake is alive
+        if not snake.dead:
+            net.update(game.state(i), score)
 
 
-def heuristic(net, game):
-    return net.predict(game.state())
+def heuristic(net, game, snake_id):
+    return net.predict(game.state(snake_id))
 
 
 def monte_carlo_value(net, game, playerMove, N=100):
@@ -157,6 +211,6 @@ if __name__ == "__main__":
     with open("input.json") as f:
         payload = json.load(f)
         instance = G.Game(payload)
-        net = model.Net("models/tanh.model")
+        net = model.Net("models/center_rotation.model")
 
-        print(get_best_move(net, instance, 2))
+        print(get_best_move(net, instance, 100))
