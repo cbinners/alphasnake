@@ -390,4 +390,6 @@ def random_game(players=2, size=7):
 
     instance = Game(payload)
 
+    print("Created game:", len(snakes), "snakes and", len(food), "food.", size, "x", size, "board.")
+
     return instance

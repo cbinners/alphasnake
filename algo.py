@@ -34,7 +34,7 @@ def predict(net, game, playerMove, is_training=True):
                 continue
             move_to_execute = [playerMove]
 
-            # Add the remaining enemy_moves for the bots
+        # Add the remaining enemy_moves for the bots
             for i in range(len(game.board['snakes'])-1):
                 move_to_execute.append(move[i])
 
@@ -229,6 +229,6 @@ def get_best_move(net, game, samples=100):
 
 if __name__ == "__main__":
     while True:
-        instance = G.random_game(2, 7)
-        net = model.Net("models/derpa.model")
-        print(get_best_move(net, instance, 5))
+        instance = G.random_game(random.randint(2,5), random.randint(7,19))
+        net = model.Net("models/balanced.model")
+        print(get_best_move(net, instance, 4))

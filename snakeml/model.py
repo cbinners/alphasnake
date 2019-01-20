@@ -32,8 +32,7 @@ class Net():
         ])
 
         self.model.compile(loss=tf.keras.losses.mean_squared_error,
-                           optimizer=tf.train.AdamOptimizer(
-                               learning_rate=0.00001),
+                           optimizer=tf.train.AdamOptimizer(learning_rate=0.0000001),
                            metrics=['mae'])
 
         self.reload()
@@ -42,7 +41,7 @@ class Net():
         tf_X = tf.convert_to_tensor(x, dtype=tf.float32)
         tf_Y = tf.convert_to_tensor(y, dtype=tf.float32)
         self.model.fit(tf_X, tf_Y, batch_size=32, callbacks=[
-                       self.cp_callback], epochs=10)
+                       self.cp_callback], epochs=3)
 
     def predict(self, state):
         tensor = tf.convert_to_tensor(state)
@@ -51,4 +50,5 @@ class Net():
 
     def reload(self):
         if self.checkpoint_path is not None:
+            print("Loaded model weights...")
             self.model.load_weights(self.checkpoint_path)
