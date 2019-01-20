@@ -179,7 +179,6 @@ def get_best_move(net, game, samples=100):
 if __name__ == "__main__":
     with open("input.json") as f:
         payload = json.load(f)
-        instance = G.Game(payload)
+        instance = G.random_game()
         net = model.Net("models/moves_for_all.model")
-
         print(get_best_move(net, instance, 2))

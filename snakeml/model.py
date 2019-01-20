@@ -33,7 +33,7 @@ class Net():
 
         self.model.compile(loss=tf.keras.losses.mean_squared_error,
                            optimizer=tf.train.AdamOptimizer(
-                               learning_rate=0.000001),
+                               learning_rate=0.0000001),
                            metrics=['mae'])
 
         self.reload()
@@ -49,11 +49,7 @@ class Net():
                        self.cp_callback], epochs=1)
 
     def predict(self, state):
-        now = time.time()
         result = self.model.predict(state)
-        after = time.time()
-        print(state.shape[0], "inputs in", int(
-            round(1000*(after - now))), "ms")
         return result.mean()
 
     def reload(self):

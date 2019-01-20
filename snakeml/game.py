@@ -335,3 +335,55 @@ class Game(object):
         outputs = generate_mutations(output, self.width, 19)
 
         return tf.convert_to_tensor(outputs, dtype=tf.float32)
+
+
+def generate_items(board_size):
+    players = 2 + random.randrange(6)
+    foodcount = 4 + random.randrange(4)
+    free_places = set()
+    for i in range(board_size):
+        for j in range(board_size):
+            free_places.add((i, j))
+
+    snakes = []
+    for i in range(players):
+        place = random.choice(list(free_places))
+        bodypoint = {
+            "x": place[0],
+            "y": place[1]
+        }
+        free_places.remove(place)
+        snakes.append({
+            "id": "%d" % i,
+            "body": [bodypoint, bodypoint, bodypoint],
+            "health": 100
+        })
+    food = []
+    for i in range(foodcount):
+        place = random.choice(list(free_places))
+        free_places.remove(place)
+        food.append({
+            "x": place[0],
+            "y": place[1]
+        })
+
+    return (snakes, food)
+
+
+def random_game():
+    size = random.randint(7, 19)
+    (snakes, food) = generate_items(size)
+    payload = {
+        "turn": 0,
+        "board": {
+            "height": size,
+            "width": size,
+            "snakes": snakes,
+            "food": food
+        },
+        "you": random.choice(snakes)
+    }
+
+    instance = Game(payload)
+
+    return instance
