@@ -265,7 +265,6 @@ class Game(object):
                 continue
             alive += 1
 
-        print([snake.dead for snake in self.board['snakes']])
         return alive <= 1
 
     def score(self):

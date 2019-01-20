@@ -47,7 +47,6 @@ def predict(net, game, playerMove):
         best = -1
         best_direction = 0
         for i in range(4):
-            print(score_for_move)
             if score_for_move[i] > best and score_for_move[i] <= 1:
                 best = score_for_move[i]
                 best_direction = i
@@ -55,7 +54,6 @@ def predict(net, game, playerMove):
         moves_for_enemies.append(best_direction)
 
     worst_move += moves_for_enemies
-    print("worst_move", worst_move)
     # Actually apply the move and continue
     game.make_move(tuple(worst_move))
     scores = simulate_move(net, game)
@@ -105,7 +103,6 @@ def simulate_move(net, game):
             # we want to take the MAX of the scores
             best = -1
             best_direction = 0
-            print(score_for_move)
             for i in range(4):
                 if score_for_move[i] > best and score_for_move[i] <= 1:
                     best = score_for_move[i]
@@ -131,6 +128,8 @@ def simulate_move(net, game):
 
 
 def record(net, game, snake_scores):
+    # build up the records
+    records = []
     for (i, score) in snake_scores:
         snake = game.board['snakes'][i]
         # Only update if the snake is alive
@@ -181,6 +180,6 @@ if __name__ == "__main__":
     with open("input.json") as f:
         payload = json.load(f)
         instance = G.Game(payload)
-        net = model.Net("models/default.model")
+        net = model.Net("models/moves_for_all.model")
 
-        print(get_best_move(net, instance, 100))
+        print(get_best_move(net, instance, 2))

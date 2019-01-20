@@ -25,7 +25,7 @@ class Net():
             tf.keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
             tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=(1, 1)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dropout(0.2),
+            tf.keras.layers.Dropout(0.4),
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dense(256, activation='relu'),
             tf.keras.layers.Dense(1, 'tanh')
@@ -33,7 +33,7 @@ class Net():
 
         self.model.compile(loss=tf.keras.losses.mean_squared_error,
                            optimizer=tf.train.AdamOptimizer(
-                               learning_rate=0.0001),
+                               learning_rate=0.000001),
                            metrics=['mae'])
 
         self.reload()
