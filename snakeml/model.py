@@ -38,18 +38,15 @@ class Net():
 
         self.reload()
 
-    def update(self, state, score):
-        y = np.full((int(state.shape[0]), 1), score)
-
-        # Convert np -> tf
-        y = tf.convert_to_tensor(y, dtype=tf.float32)
-
-        # Fit
-        self.model.fit(state, y, batch_size=32, callbacks=[
-                       self.cp_callback], epochs=1)
+    def update(self, x, y):
+        tf_X = tf.convert_to_tensor(x, dtype=tf.float32)
+        tf_Y = tf.convert_to_tensor(y, dtype=tf.float32)
+        self.model.fit(tf_X, tf_Y, batch_size=32, callbacks=[
+                       self.cp_callback], epochs=10)
 
     def predict(self, state):
-        result = self.model.predict(state)
+        tensor = tf.convert_to_tensor(state)
+        result = self.model.predict(tensor)
         return result.mean()
 
     def reload(self):

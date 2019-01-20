@@ -339,7 +339,7 @@ class Game(object):
         # Perform rotations
         outputs = generate_mutations(output, self.width, 19)
 
-        return tf.convert_to_tensor(outputs, dtype=tf.float32)
+        return outputs
 
 
 def generate_items(players, board_size):

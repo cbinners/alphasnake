@@ -1,4 +1,5 @@
 import json
+import tensorflow as tf
 import numpy as np
 from snakeml import model, game as G
 import random
@@ -159,10 +160,19 @@ def apply_updates():
     training = truncated_wins+truncated_losses+draw_scores
     random.shuffle(training)
 
-    print("Training on", len(training), "samples")
+    ys = []
+    x = []
 
     for example in training:
-        net.update(example[0], example[1])
+        y = np.full((len(example[0]), 1), example[1])
+        ys.append(y)
+        x.append(example[0])
+    print(len(x), len(ys))
+
+    X = np.vstack(x)
+    Y = np.vstack(ys)
+
+    net.update(X, Y)
 
     win_scores.clear()
     loss_scores.clear()
@@ -211,6 +221,6 @@ def get_best_move(net, game, samples=100):
 if __name__ == "__main__":
     with open("input.json") as f:
         payload = json.load(f)
-        instance = G.random_game(3, 11)
+        instance = G.random_game(2, 7)
         net = model.Net("models/moves_for_all.model")
         print(get_best_move(net, instance, 2))
