@@ -101,29 +101,25 @@ def simulate_move(net, game, is_training):
                 move_to_apply.append(0)
                 continue
 
-            # we want the best for enemy_index, initialize this out of bounds
-            score_for_move = {0: 2, 1: 2, 2: 2, 3: 2}
+            batch_states = []
             for i in range(len(moves)):
                 move = moves[i]
                 game.make_move(move)
-                score = heuristic(net, game, player)
+
+                # Only use the first state for predictions
+                state = game.state(player)[0]
+
+                # Add the batch states
+                batch_states.append((move[player], state))
+
+                # undo the move
                 game.undo_move()
 
-                move_index = move[player]
-                # minimize the scores
-                if score < score_for_move[move_index]:
-                    score_for_move[move_index] = score
+            # Run the predictions
+            best_move = batch_predict(net, batch_states)
 
-            # we want to take the MAX of the scores
-            best = -1
-            best_direction = 0
-            # Take the highest of the low
-            for i in range(4):
-                if score_for_move[i] > best and score_for_move[i] <= 1:
-                    best = score_for_move[i]
-                    best_direction = i
-            # Add this best move for the player
-            move_to_apply.append(best_direction)
+            # Add the best move for this player
+            move_to_apply.append(best_move)
 
         # Actually apply the move and continue
         game.make_move(move_to_apply)
@@ -143,6 +139,17 @@ def simulate_move(net, game, is_training):
         game.undo_move()
 
     return snake_scores
+
+
+def batch_predict(net, inputs):
+    data = [el[1] for el in inputs]
+    print(len(data))
+    results = net.predict(data)
+    index = np.argmax(results)
+
+    print(results)
+
+    return inputs[index][0]
 
 
 def record(net, game, snake_scores):
@@ -198,7 +205,7 @@ def heuristic(net, game, snake_id):
     # Add base case for death
     if game.board['snakes'][snake_id].dead:
         return -1
-    return net.predict(game.state(snake_id))
+    return net.predict(game.state(snake_id)).mean()
 
 
 def monte_carlo_value(net, game, playerMove, N=100):
@@ -238,4 +245,4 @@ if __name__ == "__main__":
     while True:
         instance = G.random_game(
             random.randint(2, 4), random.randint(7, 19))
-        cProfile.run("get_best_move(net, instance, 1)")
+        get_best_move(net, instance, 1)
