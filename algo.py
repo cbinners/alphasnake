@@ -143,11 +143,8 @@ def simulate_move(net, game, is_training):
 
 def batch_predict(net, inputs):
     data = [el[1] for el in inputs]
-    print(len(data))
     results = net.predict(data)
     index = np.argmax(results)
-
-    print(results)
 
     return inputs[index][0]
 
