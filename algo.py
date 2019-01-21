@@ -231,8 +231,10 @@ def get_best_move(net, game, samples=100):
 
 
 if __name__ == "__main__":
-    # net = model.Net("models/%s-%d.model" % (str(uuid.uuid4())[:8], time.time()))
     net = model.Net("models/bleh.model")
-    while True:
-        instance = G.random_game(random.randint(2,3), random.randint(7,11))
-        print(get_best_move(net, instance, 4))
+    with tf.Session() as sess:
+        net.set_session(sess)
+        while True:
+            instance = G.random_game(
+                random.randint(2, 2), random.randint(7, 11))
+            print(get_best_move(net, instance, 4))
