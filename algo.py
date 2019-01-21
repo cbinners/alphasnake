@@ -232,7 +232,10 @@ def get_best_move(net, game, samples=100):
 
 
 if __name__ == "__main__":
-    while True:
-        instance = G.random_game(random.randint(2,5), random.randint(7,19))
-        net = model.Net("models/balanced.model")
-        print(get_best_move(net, instance, 4))
+    net = model.Net("models/tb.model")
+    with tf.Session() as sess:
+        net.set_session(sess)
+        while True:
+            instance = G.random_game(
+                random.randint(2, 2), random.randint(7, 11))
+            print(get_best_move(net, instance, 4))
