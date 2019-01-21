@@ -78,7 +78,7 @@ def predict(net, game, playerMove, is_training=True):
     return scores[0][1]
 
 
-def simulate_move(net, game, is_training):
+def simulate_move(net, game, is_training, update_on_complete=False):
     done = False
     records = 1
     snake_scores = None
@@ -106,14 +106,13 @@ def simulate_move(net, game, is_training):
             batch_states = []
             for i in range(len(moves)):
                 move = moves[i]
+
+                # Make the move
                 game.make_move(move)
-
                 # Only use the first state for predictions
-                state = game.state(player)[0]
-
                 # Add the batch states
+                state = game.state(player)[0]
                 batch_states.append((move[player], state))
-
                 # undo the move
                 game.undo_move()
 
@@ -140,6 +139,9 @@ def simulate_move(net, game, is_training):
 
         game.undo_move()
 
+    if is_training and update_on_complete:
+        apply_updates()
+
     return snake_scores
 
 
@@ -148,18 +150,25 @@ def batch_predict(net, inputs):
     moves = [el[0] for el in inputs]
     results = net.predict(data)
 
+    valid_moves = set()
+    for move in moves:
+        valid_moves.add(move)
+
     # We want to get the mean for each result
-    sums = [[0],[0],[0],[0]]
+    sums = [[], [], [], []]
 
     for i in range(results.shape[0]):
         sums[moves[i]].append(results[i].item())
+
     for i in range(len(sums)):
-        sums[i] = np.array(sums[i]).mean()
+        if len(sums[i]) == 0:
+            sums[i] = -2
+        else:
+            sums[i] = np.array(sums[i]).mean()
 
-    move = np.array(sums).argmax()
+    move = np.nanargmax(np.array(sums))
+
     return move
-
-
 
 
 def record(net, game, snake_scores):
@@ -251,8 +260,8 @@ def get_best_move(net, game, samples=100):
 
 
 if __name__ == "__main__":
-    net = model.Net("models/overnight.model")
+    net = model.Net("models/test.model")
     while True:
         instance = G.random_game(
-            random.randint(2, 8), random.randint(7, 19))
-        get_best_move(net, instance, 1)
+            random.randint(2, 2), random.randint(7, 19))
+        simulate_move(net, instance, True, True)

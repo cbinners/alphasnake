@@ -203,7 +203,8 @@ class Game(object):
 
         available = available.difference(snake_positions)
 
-        new_food_set = set(random.sample(available, min(len(available), len(eaten))))
+        new_food_set = set(random.sample(
+            available, min(len(available), len(eaten))))
         self.board['food'] = list(leftover.union(new_food_set))
 
         # For all snakes that didn't grow, reduce
@@ -358,7 +359,7 @@ class Game(object):
             if snake.dead:
                 continue
             for i in range(len(snake.body)):
-                point = snake.body[i]
+                point = snake.body[len(snake.body)-i-1]
                 if i == 0:
                     positions[point] = str(s)
                 else:
@@ -379,7 +380,7 @@ class Game(object):
 
 
 def generate_items(players, board_size):
-    foodcount = 4 + random.randrange(9)
+    foodcount = 4 + random.randrange(3)
     free_places = set()
     for i in range(board_size):
         for j in range(board_size):
@@ -426,6 +427,7 @@ def random_game(players=2, size=7):
 
     instance = Game(payload)
 
-    print("Created game:", len(snakes), "snakes and", len(food), "food.", size, "x", size, "board.")
+    print("Created game:", len(snakes), "snakes and",
+          len(food), "food.", size, "x", size, "board.")
 
     return instance
