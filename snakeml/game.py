@@ -24,7 +24,7 @@ class Snake(object):
 
     def move(self, direction):
         self.health -= 1
-        prefix = self.body[:-1]
+        prefix = self.body
         if direction == MOVE_UP:
             head = self.body[0]
             self.body = [(head[0], head[1]-1)] + prefix
@@ -45,7 +45,7 @@ class Snake(object):
         print("ERROR NEVER GET HERE")
 
 
-def generate_mutations(arr, game_size, max_size=19):
+def generate_mutations(arr, game_size, max_size=23):
     output = []
     amount = max_size - game_size
 
@@ -166,19 +166,22 @@ class Game(object):
         food = set()
         eaten = set()
 
+        did_grow = set()
+
         # Add the food
         for item in self.board['food']:
             food.add(item)
 
         # Grow the snakes and increase health
-        for snake in self.board['snakes']:
+        for i in range(len(self.board['snakes'])):
+            snake = self.board['snakes'][i]
             if snake.dead:
                 continue
             head = snake.body[0]
             if head in food:
+                did_grow.add(i)
                 eaten.add(head)
                 snake.health = 100
-                snake.body.append(snake.body[-1])
 
         leftover = food.difference(eaten)
 
@@ -200,8 +203,14 @@ class Game(object):
 
         available = available.difference(snake_positions)
 
-        new_food_set = set(random.sample(available, len(eaten)))
+        new_food_set = set(random.sample(available, min(len(available), len(eaten))))
         self.board['food'] = list(leftover.union(new_food_set))
+
+        # For all snakes that didn't grow, reduce
+        for i in range(len(self.board['snakes'])):
+            snake = self.board['snakes'][i]
+            if i not in did_grow:
+                snake.body = snake.body[:-1]
 
     def kill_invalid_snakes(self):
         longest = dict()
@@ -310,7 +319,7 @@ class Game(object):
             print(food)
 
     def state(self, player=0):
-        output = np.zeros((19, 19, 3))
+        output = np.zeros((23, 23, 3))
         for sId in range(len(self.board['snakes'])):
             snake = self.board['snakes'][sId]
             if snake.dead:
@@ -325,20 +334,20 @@ class Game(object):
                         # add the enemy head
                         output[point[0]][point[1]][1] = snake.health / 100.0
                 else:
-                    output[point[0]][point[1]][0] = 1.0
+                    output[point[0]][point[1]][0] = max(0.1, (255-i)/255.0)
 
         for food in self.board['food']:
             output[food[0]][food[1]] = (.5, .5, .5)
 
         # set 1 outside
         i = self.width
-        while i < 19:
+        while i < 23:
             output[i, :, :] = np.ones((1, 3))
             output[:, i, :] = np.ones((1, 3))
             i += 1
 
         # Perform rotations
-        outputs = generate_mutations(output, self.width, 19)
+        outputs = generate_mutations(output, self.width, 23)
 
         return outputs
 
@@ -346,6 +355,8 @@ class Game(object):
         positions = {}
         for s in range(len(self.board['snakes'])):
             snake = self.board['snakes'][s]
+            if snake.dead:
+                continue
             for i in range(len(snake.body)):
                 point = snake.body[i]
                 if i == 0:
@@ -368,7 +379,7 @@ class Game(object):
 
 
 def generate_items(players, board_size):
-    foodcount = 4 + random.randrange(4)
+    foodcount = 4 + random.randrange(3)
     free_places = set()
     for i in range(board_size):
         for j in range(board_size):

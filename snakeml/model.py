@@ -16,7 +16,7 @@ class Net():
                                                               verbose=1)
 
         self.model = tf.keras.Sequential([
-            tf.keras.layers.InputLayer(input_shape=(19, 19, 3)),
+            tf.keras.layers.InputLayer(input_shape=(23, 23, 3)),
             tf.keras.layers.Conv2D(2, kernel_size=(3, 3), activation='relu'),
             tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation='relu'),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=(1, 1)),
@@ -32,16 +32,17 @@ class Net():
         ])
 
         self.model.compile(loss=tf.keras.losses.mean_squared_error,
-                           optimizer=tf.train.AdamOptimizer(learning_rate=0.0000001),
+                           optimizer=tf.train.AdamOptimizer(learning_rate=0.00001),
                            metrics=['mae'])
+        
+        self.reload()
 
-        # self.reload()
 
     def update(self, x, y):
         tf_X = tf.convert_to_tensor(x, dtype=tf.float32)
         tf_Y = tf.convert_to_tensor(y, dtype=tf.float32)
         self.model.fit(tf_X, tf_Y, batch_size=32, callbacks=[
-                       self.cp_callback], epochs=3)
+                       self.cp_callback], epochs=10)
 
     def predict(self, state):
         tensor = tf.convert_to_tensor(state)

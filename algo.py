@@ -1,4 +1,6 @@
 import json
+import uuid
+import time
 import tensorflow as tf
 import numpy as np
 from snakeml import model, game as G
@@ -197,11 +199,8 @@ def heuristic(net, game, snake_id):
 
 
 def monte_carlo_value(net, game, playerMove, N=100):
-    print("Simulating", N, "moves in direction", playerMove)
-    scores = [predict(net, game, playerMove, True) for i in range(N)]
-    winrate = np.mean(scores)
-    print("Average Score for", playerMove, ":", winrate)
-    return winrate
+    scores = [predict(net, game, playerMove) for i in range(N)]
+    return np.mean(scores)
 
 
 def get_best_move(net, game, samples=100):
@@ -232,7 +231,8 @@ def get_best_move(net, game, samples=100):
 
 
 if __name__ == "__main__":
+    # net = model.Net("models/%s-%d.model" % (str(uuid.uuid4())[:8], time.time()))
+    net = model.Net("models/bleh.model")
     while True:
-        instance = G.random_game(random.randint(2,5), random.randint(7,19))
-        net = model.Net("models/balanced.model")
+        instance = G.random_game(random.randint(2,3), random.randint(7,11))
         print(get_best_move(net, instance, 4))
