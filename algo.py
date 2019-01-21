@@ -7,6 +7,8 @@ import numpy as np
 from snakeml import model, game as G
 import random
 import sys
+import operator
+import itertools
 
 win_scores = []
 loss_scores = []
@@ -143,10 +145,21 @@ def simulate_move(net, game, is_training):
 
 def batch_predict(net, inputs):
     data = [el[1] for el in inputs]
+    moves = [el[0] for el in inputs]
     results = net.predict(data)
-    index = np.argmax(results)
 
-    return inputs[index][0]
+    # We want to get the mean for each result
+    sums = [[0],[0],[0],[0]]
+
+    for i in range(results.shape[0]):
+        sums[moves[i]].append(results[i].item())
+    for i in range(len(sums)):
+        sums[i] = np.array(sums[i]).mean()
+
+    move = np.array(sums).argmax()
+    return move
+
+
 
 
 def record(net, game, snake_scores):
@@ -238,8 +251,8 @@ def get_best_move(net, game, samples=100):
 
 
 if __name__ == "__main__":
-    net = model.Net("models/tracked.model")
+    net = model.Net("models/overnight.model")
     while True:
         instance = G.random_game(
-            random.randint(2, 4), random.randint(7, 19))
+            random.randint(2, 8), random.randint(7, 19))
         get_best_move(net, instance, 1)

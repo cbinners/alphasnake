@@ -379,7 +379,7 @@ class Game(object):
 
 
 def generate_items(players, board_size):
-    foodcount = 4 + random.randrange(3)
+    foodcount = 4 + random.randrange(9)
     free_places = set()
     for i in range(board_size):
         for j in range(board_size):
