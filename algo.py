@@ -17,7 +17,7 @@ draw_scores = []
 tf.enable_eager_execution()
 
 
-def predict(net, game, playerMove, is_training=True):
+def predict(net, game, player, playermove, is_training=True):
     if game.over():
         scores = game.score()
         if is_training:
@@ -26,30 +26,41 @@ def predict(net, game, playerMove, is_training=True):
         return scores[0][1]
 
     moves = game.valid_moves()
-    worst_move = [playerMove]
+    worst_move = [playermove]
 
+    # This tracks the move to simulate
     moves_for_enemies = []
-    # go through each enemy and find the best move for each individual, then construct the final move,
-    # which consists of everybody playing best for them.
-    for enemy in range(len(game.board['snakes'])-1):
-        enemy_index = enemy + 1
+
+    for enemy in range(len(game.board['snakes'])):
+        # Force the player move
+        if player == enemy:
+            moves_for_enemies.append(playermove)
+            continue
+
         # we want the best for enemy_index
         score_for_move = {0: 10, 1: 10, 2: 10, 3: 10}
         for i in range(len(moves)):
             move = moves[i]
-            if move[0] != playerMove:
-                continue
-            move_to_execute = [playerMove]
 
-        # Add the remaining enemy_moves for the bots
-            for i in range(len(game.board['snakes'])-1):
-                move_to_execute.append(move[i])
+            # Skip moves that don't have the player moving where they will go
+            if move[player] != playermove:
+                continue
+
+            move_to_execute = []
+
+            # Add the remaining enemy_moves for the bots
+            for i in range(len(game.board['snakes'])):
+                # Set the players move
+                if i == player:
+                    move_to_execute.append(playermove)
+                else:
+                    move_to_execute.append(move[i])
 
             game.make_move(move_to_execute)
-            score = heuristic(net, game, enemy_index)
+            score = heuristic(net, game, enemy)
             game.undo_move()
 
-            move_index = move[enemy_index]
+            move_index = move[enemy]
             # Check if our score is worse
             if score < score_for_move[move_index]:
                 score_for_move[move_index] = score
@@ -83,7 +94,6 @@ def simulate_move(net, game, is_training, update_on_complete=False):
     records = 1
     snake_scores = None
     while not done:
-        game.render()
         if game.over():
             snake_scores = game.score()
             if is_training:
@@ -166,6 +176,7 @@ def batch_predict(net, inputs):
         else:
             sums[i] = np.array(sums[i]).mean()
 
+    # returns the move with the largest non-nan score average
     move = np.nanargmax(np.array(sums))
 
     return move
@@ -227,15 +238,17 @@ def heuristic(net, game, snake_id):
     return net.predict(game.state(snake_id)).mean()
 
 
-def monte_carlo_value(net, game, playerMove, N=100):
-    scores = [predict(net, game, playerMove) for i in range(N)]
-    return np.mean(scores)
+def monte_carlo_value(net, game, player, move, N=100):
+    scores = [predict(net, game, player, move) for i in range(N)]
+    score = np.mean(scores)
+    print("Score", score, "for player", player, "moving", move)
+    return score
 
 
-def get_best_move(net, game, samples=100):
+def get_best_move(net, game, player, samples=100):
     best_move = G.MOVE_UP  # default to up
     best_score = -1
-    head = game.board['snakes'][0].body[0]
+    head = game.board['snakes'][player].body[0]
     # get locations around the head
     up = (head[0], head[1] - 1)
     down = (head[0], head[1] + 1)
@@ -251,7 +264,7 @@ def get_best_move(net, game, samples=100):
             continue
         if i == G.MOVE_DOWN and not game.valid_first_move(down):
             continue
-        score = monte_carlo_value(net, game, i, N=samples)
+        score = monte_carlo_value(net, game, player, i, N=samples)
         if score > best_score:
             best_score = score
             best_move = i
@@ -259,9 +272,31 @@ def get_best_move(net, game, samples=100):
     return best_move, best_score
 
 
+def simulate_game(net, game, N=5):
+    while not game.over():
+        print("Turn", game.turn)
+        game.render()
+        move_to_run = []
+        for i in range(len(game.board['snakes'])):
+            # Get the current snake
+            snake = game.board['snakes'][i]
+
+            # Get the best move for the snake running 5 simulations
+            (best_move, best_score) = get_best_move(net, game, i, N)
+
+            print("Best move for snake", i, "after",
+                  N, "simulations:", best_move, "@", best_score)
+
+            move_to_run.append(best_move)
+
+        game.make_move(move_to_run)
+
+    print("Simulation complete.")
+
+
 if __name__ == "__main__":
     net = model.Net("models/test.model")
     while True:
         instance = G.random_game(
-            random.randint(2, 2), random.randint(7, 19))
-        simulate_move(net, instance, True, True)
+            random.randint(2, 2), random.randint(19, 19))
+        simulate_game(net, instance)

@@ -306,8 +306,6 @@ class Game(object):
                 else:
                     scores.append((i, -1))
 
-        print("Scores:", scores)
-
         return scores
 
     def print(self):
@@ -360,15 +358,15 @@ class Game(object):
                 continue
             for i in range(len(snake.body)):
                 point = snake.body[len(snake.body)-i-1]
-                if i == 0:
+                if i == len(snake.body)-1:
                     positions[point] = str(s)
                 else:
-                    positions[point] = 's'
+                    positions[point] = '='
 
         for food in self.board['food']:
             positions[food] = "*"
 
-        os.system('clear')
+        # os.system('clear')
         for y in range(self.height):
             line = ""
             for x in range(self.width):
@@ -376,11 +374,13 @@ class Game(object):
                     line += positions[(x, y)]
                 else:
                     line += ' '
+            line += '|'
             print(line)
+        print('-' * self.width)
 
 
 def generate_items(players, board_size):
-    foodcount = 4 + random.randrange(3)
+    foodcount = 2 + random.randrange(int(board_size/2))
     free_places = set()
     for i in range(board_size):
         for j in range(board_size):
