@@ -1,4 +1,5 @@
 import json
+import cProfile
 import uuid
 import time
 import tensorflow as tf
@@ -10,6 +11,8 @@ import sys
 win_scores = []
 loss_scores = []
 draw_scores = []
+
+tf.enable_eager_execution()
 
 
 def predict(net, game, playerMove, is_training=True):
@@ -231,10 +234,8 @@ def get_best_move(net, game, samples=100):
 
 
 if __name__ == "__main__":
-    net = model.Net("models/bleh.model")
-    with tf.Session() as sess:
-        net.set_session(sess)
-        while True:
-            instance = G.random_game(
-                random.randint(2, 2), random.randint(7, 11))
-            print(get_best_move(net, instance, 4))
+    net = model.Net("models/tracked.model")
+    while True:
+        instance = G.random_game(
+            random.randint(2, 4), random.randint(7, 19))
+        cProfile.run("get_best_move(net, instance, 1)")

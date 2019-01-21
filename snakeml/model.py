@@ -16,7 +16,7 @@ class Net():
 
         self.model = tf.keras.Sequential([
             tf.keras.layers.InputLayer(input_shape=(23, 23, 3)),
-            tf.keras.layers.Conv2D(2, kernel_size=(3, 3), activation='relu'),
+            tf.keras.layers.Conv2D(16, kernel_size=(3, 3), activation='relu'),
             tf.keras.layers.Conv2D(64, kernel_size=(3, 3), activation='relu'),
             tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=(1, 1)),
             tf.keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
@@ -24,7 +24,7 @@ class Net():
             tf.keras.layers.Conv2D(128, kernel_size=(3, 3), activation='relu'),
             tf.keras.layers.MaxPool2D(pool_size=(4, 4), strides=(1, 1)),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dropout(0.4),
+            tf.keras.layers.Dropout(0.5),
             tf.keras.layers.Dense(128, activation='relu'),
             tf.keras.layers.Dense(256, activation='relu'),
             tf.keras.layers.Dense(1, 'tanh')
@@ -34,19 +34,18 @@ class Net():
                            optimizer=tf.train.AdamOptimizer(learning_rate=0.00001),
                            metrics=['mae'])
         
-        self.reload()
+        # self.reload()
 
 
     def update(self, x, y):
         tf_X = tf.convert_to_tensor(x, dtype=tf.float32)
         tf_Y = tf.convert_to_tensor(y, dtype=tf.float32)
         self.model.fit(tf_X, tf_Y, callbacks=[
-                       self.cp_callback, self.tb_callback], steps_per_epoch=1, epochs=10)
+                       self.cp_callback, self.tb_callback], epochs=3)
 
     def predict(self, state):
-        data = np.stack(state)
-        tensor = tf.convert_to_tensor(data)
-        result = self.model.predict(tensor, steps=1)
+        tensor = tf.convert_to_tensor(state)
+        result = self.model.predict(tensor)
         return result.mean()
 
     def reload(self):
@@ -54,5 +53,3 @@ class Net():
             print("Loaded model weights...")
             self.model.load_weights(self.checkpoint_path)
 
-    def set_session(self, sess):
-        self.session = sess
