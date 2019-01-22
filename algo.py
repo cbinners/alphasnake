@@ -7,8 +7,10 @@ import numpy as np
 from snakeml import model, game as G
 import random
 import sys
+import os
 import operator
 import itertools
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 win_scores = []
 loss_scores = []
@@ -190,7 +192,7 @@ def record(net, game, snake_scores):
             win_scores.append((state, score))
         if score == -1:
             loss_scores.append((state, score))
-        if score == 0:
+        if score == -0.5:
             draw_scores.append((state, score))
 
 
@@ -298,5 +300,6 @@ if __name__ == "__main__":
     net = model.Net("models/test.model")
     while True:
         instance = G.random_game(
-            random.randint(2, 2), random.randint(19, 19))
-        simulate_game(net, instance)
+            random.randint(2, 2), random.randint(7, 7))
+        # Run the game but do so using 25 predictions
+        simulate_game(net, instance, 5)

@@ -11,7 +11,7 @@ class Net():
 
         self.cp_callback = tf.keras.callbacks.ModelCheckpoint(self.checkpoint_path,
                                                               save_weights_only=True,
-                                                              verbose=1)
+                                                              verbose=False)
 
         self.model = tf.keras.Sequential([
             tf.keras.layers.InputLayer(input_shape=(23, 23, 3)),
@@ -40,7 +40,7 @@ class Net():
         tf_X = tf.convert_to_tensor(x, dtype=tf.float32)
         tf_Y = tf.convert_to_tensor(y, dtype=tf.float32)
         self.model.fit(tf_X, tf_Y, callbacks=[
-                       self.cp_callback], epochs=1)
+                       self.cp_callback], epochs=1, verbose=False)
 
     def predict(self, state):
         tensor = tf.convert_to_tensor(state)

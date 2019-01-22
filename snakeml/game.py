@@ -300,7 +300,7 @@ class Game(object):
                 if winner == -1:
                     # tie, check if i'm longest
                     if greatest_death_turn == snake.turn:
-                        scores.append((i, 0))
+                        scores.append((i, -0.5))
                     else:
                         scores.append((i, -1))
                 else:
