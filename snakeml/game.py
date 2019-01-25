@@ -318,7 +318,7 @@ class Game(object):
             print(food)
 
     def state(self, player=0):
-        output = np.zeros((10, 10, 3))
+        output = np.zeros((19, 19, 3))
         for sId in range(len(self.board['snakes'])):
             snake = self.board['snakes'][sId]
             if snake.dead:
@@ -340,13 +340,13 @@ class Game(object):
 
         # set 1 outside
         i = self.width
-        while i < 10:
+        while i < 19:
             output[i, :, :] = np.ones((1, 3))
             output[:, i, :] = np.ones((1, 3))
             i += 1
 
         # Perform rotations
-        outputs = generate_mutations(output, self.width, 10)
+        outputs = generate_mutations(output, self.width, 19)
 
         return outputs
 

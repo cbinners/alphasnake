@@ -16,7 +16,7 @@ win_scores = []
 loss_scores = []
 draw_scores = []
 
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 
 
 def predict(net, game, player, playermove, is_training=True):
@@ -25,7 +25,7 @@ def predict(net, game, player, playermove, is_training=True):
         if is_training:
             record(net, game, scores)
             apply_updates()
-        print("Scores", scores, player,":", scores[player])
+        print("Scores", scores, player, ":", scores[player])
         return scores[player][1]
 
     moves = game.valid_moves()
@@ -93,8 +93,7 @@ def predict(net, game, player, playermove, is_training=True):
     if is_training:
         record(net, game, scores)
         apply_updates()
-    
-    
+
     print("Scores", scores, scores[player])
 
     return scores[player][1]
@@ -157,7 +156,6 @@ def simulate_move(net, game, is_training, update_on_complete=False):
                 record(net, game, snake_scores)
         game.undo_move()
 
-
     if is_training and update_on_complete and len(win_scores + draw_scores + loss_scores) > 0:
         apply_updates()
 
@@ -215,7 +213,6 @@ def apply_updates():
 
     # Construct the final training set, add all draws in (net 0)
     training = truncated_wins+truncated_losses+draw_scores
-
 
     # Shuffle the training data, this shuffles in place
     random.shuffle(training)
@@ -301,13 +298,14 @@ def simulate_game(net, game, N=5):
             move_to_run.append(best_move)
 
         game.make_move(move_to_run)
+        net.save()
 
     print("Simulation complete.")
 
 
 if __name__ == "__main__":
-    net = model.Net("models/10x10.model")
+    net = model.Net("models/new_model")
     while True:
         instance = G.random_game(
-            random.randint(2,4), random.randint(10, 10))
-        simulate_game(net, instance, 10)
+            random.randint(2, 2), random.randint(7, 7))
+        simulate_game(net, instance, 1)
