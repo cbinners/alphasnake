@@ -45,7 +45,7 @@ class Snake(object):
         print("ERROR NEVER GET HERE")
 
 
-def generate_mutations(arr, game_size, max_size=23):
+def generate_mutations(arr, game_size, max_size=10):
     output = []
     amount = max_size - game_size
 
@@ -300,7 +300,7 @@ class Game(object):
                 if winner == -1:
                     # tie, check if i'm longest
                     if greatest_death_turn == snake.turn:
-                        scores.append((i, -0.5))
+                        scores.append((i, 0))
                     else:
                         scores.append((i, -1))
                 else:
@@ -318,7 +318,7 @@ class Game(object):
             print(food)
 
     def state(self, player=0):
-        output = np.zeros((23, 23, 3))
+        output = np.zeros((10, 10, 3))
         for sId in range(len(self.board['snakes'])):
             snake = self.board['snakes'][sId]
             if snake.dead:
@@ -333,20 +333,20 @@ class Game(object):
                         # add the enemy head
                         output[point[0]][point[1]][1] = snake.health / 100.0
                 else:
-                    output[point[0]][point[1]][0] = max(0.1, (255-i)/255.0)
+                    output[point[0]][point[1]][0] = i / 255.0
 
         for food in self.board['food']:
             output[food[0]][food[1]] = (.5, .5, .5)
 
         # set 1 outside
         i = self.width
-        while i < 23:
+        while i < 10:
             output[i, :, :] = np.ones((1, 3))
             output[:, i, :] = np.ones((1, 3))
             i += 1
 
         # Perform rotations
-        outputs = generate_mutations(output, self.width, 23)
+        outputs = generate_mutations(output, self.width, 10)
 
         return outputs
 

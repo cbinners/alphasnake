@@ -25,18 +25,23 @@ def predict(net, game, player, playermove, is_training=True):
         if is_training:
             record(net, game, scores)
             apply_updates()
-        return scores[0][1]
+        print("Scores", scores, player,":", scores[player])
+        return scores[player][1]
 
     moves = game.valid_moves()
-    worst_move = [playermove]
 
-    # This tracks the move to simulate
+    # This tracks the move to simulate, with the forced player move
     moves_for_enemies = []
 
     for enemy in range(len(game.board['snakes'])):
+        snake = game.board['snakes'][enemy]
         # Force the player move
         if player == enemy:
             moves_for_enemies.append(playermove)
+            continue
+
+        if snake.dead:
+            moves_for_enemies.append(0)
             continue
 
         # we want the best for enemy_index
@@ -51,12 +56,12 @@ def predict(net, game, player, playermove, is_training=True):
             move_to_execute = []
 
             # Add the remaining enemy_moves for the bots
-            for i in range(len(game.board['snakes'])):
+            for j in range(len(game.board['snakes'])):
                 # Set the players move
-                if i == player:
+                if j == player:
                     move_to_execute.append(playermove)
                 else:
-                    move_to_execute.append(move[i])
+                    move_to_execute.append(move[j])
 
             game.make_move(move_to_execute)
             score = heuristic(net, game, enemy)
@@ -68,18 +73,19 @@ def predict(net, game, player, playermove, is_training=True):
                 score_for_move[move_index] = score
 
         # we want to take the MAX of the scores
-        best = -1
+        best = -2
         best_direction = 0
         for i in range(4):
             if score_for_move[i] > best and score_for_move[i] <= 1:
                 best = score_for_move[i]
                 best_direction = i
         # Add this best move for the enemy
+        if best == -2:
+            print("Best move not found, THIS SHOULD NOT HAPPEN")
         moves_for_enemies.append(best_direction)
 
-    worst_move += moves_for_enemies
     # Actually apply the move and continue
-    game.make_move(tuple(worst_move))
+    game.make_move(tuple(moves_for_enemies))
     scores = simulate_move(net, game, is_training)
     game.undo_move()
 
@@ -87,21 +93,21 @@ def predict(net, game, player, playermove, is_training=True):
     if is_training:
         record(net, game, scores)
         apply_updates()
+    
+    
+    print("Scores", scores, scores[player])
 
-    return scores[0][1]
+    return scores[player][1]
 
 
 def simulate_move(net, game, is_training, update_on_complete=False):
     done = False
-    records = 1
+    records = 0
     snake_scores = None
     while not done:
         if game.over():
             snake_scores = game.score()
-            if is_training:
-                record(net, game, snake_scores)
             done = True
-            records -= 1
             break
 
         moves = game.valid_moves()
@@ -140,6 +146,7 @@ def simulate_move(net, game, is_training, update_on_complete=False):
 
     # Undo stack, add the inputs for each snake
     for i in range(records):
+        # UNDO the final move
         # If we're training, update the model
         if is_training:
             for i in range(len(game.board['snakes'])):
@@ -148,10 +155,10 @@ def simulate_move(net, game, is_training, update_on_complete=False):
                     continue
                 # Update the net for each snake in this position
                 record(net, game, snake_scores)
-
         game.undo_move()
 
-    if is_training and update_on_complete:
+
+    if is_training and update_on_complete and len(win_scores + draw_scores + loss_scores) > 0:
         apply_updates()
 
     return snake_scores
@@ -176,7 +183,7 @@ def batch_predict(net, inputs):
         if len(sums[i]) == 0:
             sums[i] = -2
         else:
-            sums[i] = np.array(sums[i]).mean()
+            sums[i] = np.array(sums[i]).min()
 
     # returns the move with the largest non-nan score average
     move = np.nanargmax(np.array(sums))
@@ -192,7 +199,7 @@ def record(net, game, snake_scores):
             win_scores.append((state, score))
         if score == -1:
             loss_scores.append((state, score))
-        if score == -0.5:
+        if score == 0:
             draw_scores.append((state, score))
 
 
@@ -202,11 +209,13 @@ def apply_updates():
 
     # Make sure the win and loss set are equal size
     truncate_size = min(wins, losses)
+    truncate_size = max(len(draw_scores), truncate_size)
     truncated_wins = win_scores[:truncate_size]
     truncated_losses = loss_scores[:truncate_size]
 
     # Construct the final training set, add all draws in (net 0)
     training = truncated_wins+truncated_losses+draw_scores
+
 
     # Shuffle the training data, this shuffles in place
     random.shuffle(training)
@@ -249,7 +258,7 @@ def monte_carlo_value(net, game, player, move, N=100):
 
 def get_best_move(net, game, player, samples=100):
     best_move = G.MOVE_UP  # default to up
-    best_score = -1
+    best_score = -2
     head = game.board['snakes'][player].body[0]
     # get locations around the head
     up = (head[0], head[1] - 1)
@@ -297,9 +306,8 @@ def simulate_game(net, game, N=5):
 
 
 if __name__ == "__main__":
-    net = model.Net("models/test.model")
+    net = model.Net("models/10x10.model")
     while True:
         instance = G.random_game(
-            random.randint(2, 2), random.randint(7, 7))
-        # Run the game but do so using 25 predictions
-        simulate_game(net, instance, 5)
+            random.randint(2,4), random.randint(10, 10))
+        simulate_game(net, instance, 10)
