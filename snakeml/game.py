@@ -318,7 +318,7 @@ class Game(object):
             print(food)
 
     def state(self, player=0):
-        output = np.zeros((19, 19, 3))
+        output = np.zeros((10, 10, 3))
         for sId in range(len(self.board['snakes'])):
             snake = self.board['snakes'][sId]
             if snake.dead:
@@ -328,25 +328,25 @@ class Game(object):
                 if i == 0:
                     if sId == player:
                         # add the player head
-                        output[point[0]][point[1]][2] = snake.health / 100.0
+                        output[point[0]][point[1]][2] = 1.0
                     else:
                         # add the enemy head
-                        output[point[0]][point[1]][1] = snake.health / 100.0
+                        output[point[0]][point[1]][1] = 1.0
                 else:
-                    output[point[0]][point[1]][0] = i / 255.0
+                    output[point[0]][point[1]][0] = 1.0
 
         for food in self.board['food']:
             output[food[0]][food[1]] = (.5, .5, .5)
 
         # set 1 outside
         i = self.width
-        while i < 19:
+        while i < 10:
             output[i, :, :] = np.ones((1, 3))
             output[:, i, :] = np.ones((1, 3))
             i += 1
 
         # Perform rotations
-        outputs = generate_mutations(output, self.width, 19)
+        outputs = generate_mutations(output, self.width, 10)
 
         return outputs
 
@@ -380,7 +380,7 @@ class Game(object):
 
 
 def generate_items(players, board_size):
-    foodcount = 2 + random.randrange(int(board_size/2))
+    foodcount = int(board_size/2) + random.randrange(int(board_size/2))
     free_places = set()
     for i in range(board_size):
         for j in range(board_size):

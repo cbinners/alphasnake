@@ -304,8 +304,8 @@ def simulate_game(net, game, N=5):
 
 
 if __name__ == "__main__":
-    net = model.Net("models/new_model")
+    net = model.Net("models/lotsofpools")
     while True:
         instance = G.random_game(
-            random.randint(2, 2), random.randint(7, 7))
-        simulate_game(net, instance, 1)
+            random.randint(2, 2), random.randint(10, 10))
+        simulate_game(net, instance, 10)
